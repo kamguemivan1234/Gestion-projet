@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   CheckCircle2, 
   LayoutDashboard, 
@@ -30,11 +30,15 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 const LandingPage = () => {
+  const navigate = useNavigate();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isVisible, setIsVisible] = useState({});
   const [activeFeature, setActiveFeature] = useState(0);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showExpertModal, setShowExpertModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authType, setAuthType] = useState(''); // 'signup', 'login', 'start'
+  const [userRole, setUserRole] = useState(''); // 'admin', 'employee'
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -45,6 +49,13 @@ const LandingPage = () => {
     phone: '',
     subject: '',
     message: ''
+  });
+  const [authForm, setAuthForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    company: ''
   });
 
   const heroRef = useRef(null);
@@ -118,6 +129,75 @@ const LandingPage = () => {
       top: 0,
       behavior: 'smooth'
     });
+  };
+
+  // Auth modal functions
+  const openAuthModal = (type) => {
+    setAuthType(type);
+    setShowAuthModal(true);
+    setUserRole('');
+    setSubmitSuccess(false);
+    setSubmitError('');
+  };
+
+  const closeAuthModal = () => {
+    setShowAuthModal(false);
+    setAuthForm({
+      firstName: '',
+      lastName: '',
+      email: '',
+      password: '',
+      company: ''
+    });
+    setUserRole('');
+    setSubmitSuccess(false);
+    setSubmitError('');
+  };
+
+  const handleAuthFormChange = (e) => {
+    const { name, value } = e.target;
+    setAuthForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validation
+    if (!authForm.firstName || !authForm.lastName || !authForm.email || !authForm.password || !userRole) {
+      setSubmitError('Veuillez remplir tous les champs obligatoires et choisir votre rôle');
+      return;
+    }
+
+    // Validation email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(authForm.email)) {
+      setSubmitError('Veuillez entrer une adresse email valide');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError('');
+
+    try {
+      // Simulation d'envoi des données - En production, vous devriez envoyer vers votre backend
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Redirection selon le rôle
+      if (userRole === 'admin') {
+        navigate('/dashboard');
+      } else if (userRole === 'employee') {
+        navigate('/employee-dashboard');
+      }
+      
+      closeAuthModal();
+    } catch (error) {
+      setSubmitError('Une erreur est survenue lors de la connexion. Veuillez réessayer.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Expert modal functions
@@ -303,7 +383,10 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col overflow-hidden">
-      <Header />
+      <Header 
+        onLoginClick={() => openAuthModal('login')}
+        onSignupClick={() => openAuthModal('signup')}
+      />
       
       {/* Floating Navigation Menu */}
       <div className="fixed left-4 top-1/2 transform -translate-y-1/2 z-40 hidden lg:block">
@@ -438,8 +521,8 @@ const LandingPage = () => {
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                  <Link 
-                    to="/auth" 
+                  <button 
+                    onClick={() => openAuthModal('start')}
                     className="group relative bg-white text-purple-700 hover:text-white font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl overflow-hidden"
                   >
                     <span className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
@@ -447,7 +530,7 @@ const LandingPage = () => {
                       Commencer Gratuitement
                       <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                     </span>
-                  </Link>
+                  </button>
                   
                   <button className="group flex items-center gap-3 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white font-semibold py-4 px-8 rounded-2xl transition-all duration-300 border border-white/30">
                     <div className="bg-white/20 rounded-full p-2 group-hover:bg-white/30 transition-colors">
@@ -772,8 +855,8 @@ const LandingPage = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-6 justify-center mb-12">
-              <Link 
-                to="/auth" 
+              <button 
+                onClick={() => openAuthModal('signup')}
                 className="group relative bg-white text-purple-700 hover:text-white font-bold py-6 px-12 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl text-xl overflow-hidden"
               >
                 <span className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
@@ -782,7 +865,7 @@ const LandingPage = () => {
                   Commencer Maintenant
                   <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform" />
                 </span>
-              </Link>
+              </button>
               
               <button 
                 onClick={openExpertModal}
@@ -814,6 +897,184 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
+
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-fadeIn">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                  {authType === 'signup' && 'Créer un compte'}
+                  {authType === 'login' && 'Se connecter'}
+                  {authType === 'start' && 'Commencer'}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Rejoignez des milliers d'équipes qui collaborent efficacement
+                </p>
+              </div>
+              <button 
+                onClick={closeAuthModal}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAuthSubmit} className="space-y-6">
+              {/* Error Message */}
+              {submitError && (
+                <div className="bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center gap-3">
+                  <AlertCircle className="h-5 w-5 text-red-500" />
+                  <span className="text-red-700 dark:text-red-300">{submitError}</span>
+                </div>
+              )}
+
+              {/* Name Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input 
+                    type="text" 
+                    name="firstName"
+                    placeholder="Prénom *"
+                    value={authForm.firstName}
+                    onChange={handleAuthFormChange}
+                    className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-base"
+                    required
+                  />
+                </div>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input 
+                    type="text" 
+                    name="lastName"
+                    placeholder="Nom *"
+                    value={authForm.lastName}
+                    onChange={handleAuthFormChange}
+                    className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-base"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Email Field */}
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input 
+                  type="email" 
+                  name="email"
+                  placeholder="Adresse email *"
+                  value={authForm.email}
+                  onChange={handleAuthFormChange}
+                  className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-base"
+                  required
+                />
+              </div>
+
+              {/* Password Field */}
+              <div className="relative">
+                <Shield className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input 
+                  type="password" 
+                  name="password"
+                  placeholder="Mot de passe *"
+                  value={authForm.password}
+                  onChange={handleAuthFormChange}
+                  className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-base"
+                  required
+                />
+              </div>
+
+              {/* Company Field for Signup */}
+              {authType === 'signup' && (
+                <div className="relative">
+                  <Users className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input 
+                    type="text" 
+                    name="company"
+                    placeholder="Entreprise"
+                    value={authForm.company}
+                    onChange={handleAuthFormChange}
+                    className="w-full pl-12 pr-4 py-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-2xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-base"
+                  />
+                </div>
+              )}
+
+              {/* Role Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  Vous êtes : *
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setUserRole('admin')}
+                    className={`p-4 border-2 rounded-xl text-center transition-all ${
+                      userRole === 'admin'
+                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300'
+                        : 'border-gray-300 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-600'
+                    }`}
+                  >
+                    <Shield className="w-6 h-6 mx-auto mb-2" />
+                    <div className="font-medium">Administrateur</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Gérer l'équipe</div>
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setUserRole('employee')}
+                    className={`p-4 border-2 rounded-xl text-center transition-all ${
+                      userRole === 'employee'
+                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300'
+                        : 'border-gray-300 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-600'
+                    }`}
+                  >
+                    <Users className="w-6 h-6 mx-auto mb-2" />
+                    <div className="font-medium">Employé</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Membre d'équipe</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button 
+                type="submit" 
+                disabled={isSubmitting || !userRole}
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold py-4 px-6 rounded-2xl transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-base flex items-center justify-center gap-3"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Connexion en cours...
+                  </>
+                ) : (
+                  <>
+                    {authType === 'signup' && 'Créer mon compte'}
+                    {authType === 'login' && 'Se connecter'}
+                    {authType === 'start' && 'Commencer'}
+                  </>
+                )}
+              </button>
+
+              {/* Footer Links */}
+              <div className="text-center">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {authType === 'signup' ? 'Déjà un compte ?' : 'Pas encore de compte ?'}
+                  <button
+                    type="button"
+                    onClick={() => setAuthType(authType === 'signup' ? 'login' : 'signup')}
+                    className="ml-1 text-purple-600 hover:text-purple-500 font-medium"
+                  >
+                    {authType === 'signup' ? 'Se connecter' : 'Créer un compte'}
+                  </button>
+                </p>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Expert Contact Modal */}
       {showExpertModal && (
